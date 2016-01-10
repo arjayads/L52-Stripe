@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CreditCard;
 use App\User;
 use Illuminate\Http\Request;
 use App\Http\Requests;
 use Illuminate\Support\Facades\Auth;
+use Stripe\Stripe;
 use Symfony\Component\CssSelector\Exception\InternalErrorException;
 
 class CustomerController extends Controller
@@ -25,7 +25,11 @@ class CustomerController extends Controller
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function ccInfo() {
-        return view('credit-card.cc-info');
+        if (Auth::check() && !Auth::user()->subscribed('main')) {
+            return view('credit-card.cc-info');
+        } else {
+            return redirect("/home");
+        }
     }
 
 
@@ -39,11 +43,30 @@ class CustomerController extends Controller
     public function processCard(Request $request) {
         $ccDetails = $request->all();
         try {
+            $amount = 100; // from config or db
             $user = User::find(Auth::user()->id);
-            $user->newSubscription('main', 'monthly')->create($ccDetails['stripeToken']);
-            return redirect("/home");
+
+            if($user) {
+                $subscription = $user->newSubscription('main', 'monthly')->create($ccDetails['stripeToken']);
+
+                if ($subscription->wasRecentlyCreated) {
+
+                    $charged = $user->charge($amount, [
+                        'source' => $user->stripe_id,
+                        'receipt_email' => $user->email,
+                        'currency' => 'usd',
+                        'description' => 'First charge',
+                    ]);
+                    if ($charged) {
+                        return redirect("/home");
+                    } else {
+                        $user->subscription('main')->cancel();
+                    }
+                }
+            }
+
         } catch(\Exception $ex) {
-            throw new InternalErrorException($ex);
+            return redirect()->back()->with('error', $ex->getMessage());
         }
     }
 }

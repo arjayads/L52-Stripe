@@ -10,7 +10,9 @@
                     <form id="payment-form" class="form-horizontal" role="form" method="POST" action="/process-card">
                         {!! csrf_field() !!}
 
-                        <div class="alert alert-danger payment-errors hidden"></div>
+                        <div class="alert alert-danger payment-errors @if(!$errors->any()){{'hidden'}}@endif">
+                            {{$errors->first('error')}}
+                        </div>
 
                         <div class="form-group">
                             <label class="col-md-4 control-label">Card Number</label>

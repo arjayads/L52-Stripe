@@ -100,7 +100,7 @@ class AuthController extends Controller
     public function login(Request $request) {
         $res = $this->traitlogin($request);
 
-        if (Auth::check() && !Auth::user()->is_subscribed) {
+        if (Auth::check() && !Auth::user()->subscribed('main')) {
             return redirect("/cc-info");
         } else {
             return $res;
