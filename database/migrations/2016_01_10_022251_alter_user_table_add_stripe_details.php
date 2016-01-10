@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class AlterUsersTableAddIsSubsribed extends Migration
+class AlterUserTableAddStripeDetails extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,9 @@ class AlterUsersTableAddIsSubsribed extends Migration
     public function up()
     {
         Schema::table('users', function ($table) {
-            $table->boolean('is_subscribed')->default(false);
+            $table->string('stripe_id')->nullable();
+            $table->string('card_brand')->nullable();
+            $table->string('card_last_four')->nullable();
         });
     }
 
@@ -25,7 +27,9 @@ class AlterUsersTableAddIsSubsribed extends Migration
     public function down()
     {
         Schema::table('users', function ($table) {
-            $table->dropColumn('is_subscribed');
+            $table->dropColumn('stripe_id');
+            $table->dropColumn('card_brand');
+            $table->dropColumn('card_last_four');
         });
     }
 }
