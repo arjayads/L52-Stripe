@@ -29,8 +29,8 @@ Route::get('/', function () {
 Route::group(['middleware' => 'web'], function () {
     Route::auth();
 
-    Route::get('/cc-info', 'CreditCardController@ccInfo');
-    Route::post('/process-card', 'CreditCardController@process');
+    Route::get('/cc-info', 'CustomerController@ccInfo');
+    Route::post('/process-card', 'CustomerController@processCard');
 
     Route::get('/home', 'HomeController@index');
 });
