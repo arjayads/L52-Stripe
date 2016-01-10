@@ -18,7 +18,7 @@
                             <label class="col-md-4 control-label">Card Number</label>
 
                             <div class="col-md-6">
-                                <input type="text" class="form-control" size="20" data-stripe="number">
+                                <input type="text" class="form-control" size="20" data-stripe="number" >
                             </div>
                         </div>
 

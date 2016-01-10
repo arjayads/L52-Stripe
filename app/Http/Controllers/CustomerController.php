@@ -6,6 +6,7 @@ use App\User;
 use Illuminate\Http\Request;
 use App\Http\Requests;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 use Stripe\Stripe;
 use Symfony\Component\CssSelector\Exception\InternalErrorException;
 
@@ -41,32 +42,35 @@ class CustomerController extends Controller
      * @throws InternalErrorException
      */
     public function processCard(Request $request) {
-        $ccDetails = $request->all();
-        try {
-            $amount = 100; // from config or db
-            $user = User::find(Auth::user()->id);
+        $user = User::find(Auth::user()->id);
+        if($user) {
+            try {
+                $customer = $user->createAsStripeCustomer($request->get('stripeToken'), ["source" => $request->get('stripeToken'), "description" => "Customer for {$user->email}"]);
+                $user->stripe_id = $customer->id;
+                $user->save();
 
-            if($user) {
-                $subscription = $user->newSubscription('main', 'monthly')->create($ccDetails['stripeToken']);
+                $amount = 100; // from config or db
 
-                if ($subscription->wasRecentlyCreated) {
+                $charged = $user->charge($amount, [
+                    'source' => $customer->id,
+                    'receipt_email' => $user->email,
+                    'currency' => 'usd',
+                    'description' => 'First charge',
+                ]);
 
-                    $charged = $user->charge($amount, [
-                        'source' => $user->stripe_id,
-                        'receipt_email' => $user->email,
-                        'currency' => 'usd',
-                        'description' => 'First charge',
-                    ]);
-                    if ($charged) {
+                if ($charged) {
+                    $subscription = $user->newSubscription('main', 'monthly')->create($customer->id);
+                    if ($subscription->wasRecentlyCreated) {
                         return redirect("/home");
-                    } else {
-                        $user->subscription('main')->cancel();
                     }
+                } else {
+                    return redirect()->back()->withErrors(['error' => "Processing charge failed"]);
                 }
+            } catch(\Exception $ex) {
+                return redirect()->back()->withErrors(['error' => $ex->getMessage()]);
             }
-
-        } catch(\Exception $ex) {
-            return redirect()->back()->with('error', $ex->getMessage());
+        } else {
+            return redirect("/login");
         }
     }
 }
